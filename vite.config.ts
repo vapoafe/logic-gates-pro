@@ -4,8 +4,11 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(({command}) => {
+  const isGitHubActions = !!process.env.GITHUB_ACTIONS;
+  const basePath = process.env.BASE_PATH || (isGitHubActions ? '/logic-gates-pro/' : (command === 'build' ? './' : '/'));
+
   return {
-    base: command === 'build' ? './' : '/',
+    base: basePath,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -13,12 +16,8 @@ export default defineConfig(({command}) => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify - file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
 });
-
