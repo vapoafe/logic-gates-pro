@@ -1,0 +1,6 @@
+{
+  "name": "Logic Gates Pro - Διαδραστική Εκμάθηση Λογικών Πυλών & Άλγεβρας Boole",
+  "description": "Μάθετε λογικές πύλες (AND, OR, NOT, XOR, NAND, NOR, XNOR), κανόνες De Morgan και σχεδιάστε διαδραστικά κυκλώματα με gamification, ασκήσεις και προσομοιωτή.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
