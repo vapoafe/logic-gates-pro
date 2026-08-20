@@ -140,19 +140,19 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
 
         {/* 1. Gate Evaluation Visual Display */}
         {exercise.type === 'gate-evaluation' && exercise.gate && exercise.inputs && (
-          <div className="py-6 px-4 bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
+          <div className="py-6 px-4 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
             {/* Inputs Column */}
             <div className="flex flex-col gap-3">
               {Object.entries(exercise.inputs).map(([key, val]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-slate-400 w-6">
+                  <span className="font-mono text-sm font-bold text-slate-700 dark:text-slate-400 w-6">
                     {key}:
                   </span>
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-lg border-2 ${
                       val === 1
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500 shadow-md shadow-emerald-500/20'
-                        : 'bg-rose-500/20 text-rose-400 border-rose-500/50'
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500 shadow-md shadow-emerald-500/20'
+                        : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/50'
                     }`}
                   >
                     {val}
@@ -162,16 +162,16 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
             </div>
 
             {/* Gate Diagram */}
-            <div className="p-3 bg-slate-800/90 rounded-2xl border border-slate-700">
+            <div className="p-3 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
               <GateSvg type={exercise.gate} width={100} height={60} active={false} />
             </div>
 
             {/* Output Target */}
             <div className="flex flex-col items-center">
-              <span className="text-xs font-mono font-bold text-slate-400 mb-1">
+              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 mb-1">
                 {isEl ? 'Έξοδος' : 'Output'}
               </span>
-              <div className="w-12 h-12 rounded-xl bg-slate-800 border-2 border-dashed border-indigo-400/60 text-indigo-300 flex items-center justify-center font-mono font-black text-2xl animate-pulse">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border-2 border-dashed border-indigo-500 dark:border-indigo-400/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-mono font-black text-2xl animate-pulse shadow-sm">
                 ?
               </div>
             </div>
@@ -180,11 +180,11 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
 
         {/* 2. Boolean Simplification Expression */}
         {exercise.type === 'boolean-simplification' && exercise.expression && (
-          <div className="py-8 px-6 bg-gradient-to-br from-indigo-950/70 to-slate-900 rounded-2xl border border-indigo-500/30 text-center shadow-inner">
-            <span className="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-2 block">
+          <div className="py-8 px-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/70 dark:to-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 text-center shadow-inner">
+            <span className="text-xs uppercase tracking-widest text-indigo-600 dark:text-indigo-300 font-bold mb-2 block">
               {isEl ? 'Λογική Έκφραση' : 'Boolean Expression'}
             </span>
-            <div className="font-mono font-black text-3xl sm:text-4xl text-indigo-200 tracking-wider">
+            <div className="font-mono font-black text-3xl sm:text-4xl text-indigo-900 dark:text-indigo-200 tracking-wider">
               {exercise.expression}
             </div>
           </div>
@@ -198,7 +198,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
                 ? 'Κάντε κλικ στα κελιά με το "?" για να ορίσετε 0 ή 1:'
                 : 'Click on the "?" cells to set 0 or 1:'}
             </p>
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
               <table className="w-full text-center text-sm">
                 <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
                   <tr>
@@ -214,9 +214,9 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
                     const selectedVal = tableAnswers[idx];
                     const isAnswerSet = selectedVal !== undefined;
                     return (
-                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-750">
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                         {row.inputs.map((inp, inpIdx) => (
-                          <td key={inpIdx} className="py-3 px-4 font-bold text-slate-700 dark:text-slate-300">
+                          <td key={inpIdx} className="py-3 px-4 font-bold text-slate-800 dark:text-slate-300">
                             {inp}
                           </td>
                         ))}
@@ -314,7 +314,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ exercise, 
             <div className="pt-2 flex justify-end">
               <button
                 onClick={onNext}
-                className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md hover:scale-105 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-bold text-sm shadow-md hover:scale-105 transition-all flex items-center gap-2"
               >
                 <span>{isEl ? 'Επόμενη Άσκηση' : 'Next Exercise'}</span>
                 <ArrowRight className="w-4 h-4" />

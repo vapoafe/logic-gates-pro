@@ -162,38 +162,41 @@ export const CircuitDesigner: React.FC = () => {
       x: initialPosition.x,
       y: initialPosition.y,
       label: defaultLabel,
-      state: type === 'CONST_1' ? 1 : 0,
+      state: type === 'SWITCH' ? 0 : undefined,
       outputValue: 0,
     };
 
-    setNodes([...nodes, newNode]);
+    setNodes((prev) => [...prev, newNode]);
+    recordCircuitBuilt();
     playSound('click', soundEnabled);
   };
 
-  // Toggle switch input state
-  const handleToggleNode = (id: string, e: React.MouseEvent) => {
+  // Toggle switch on / off
+  const handleToggleNode = (nodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setNodes((prev) =>
       prev.map((n) => {
-        if (n.id === id) {
-          const nextState = n.state === 1 ? 0 : 1;
-          playSound('toggle', soundEnabled);
-          return { ...n, state: nextState };
+        if (n.id === nodeId && n.type === 'SWITCH') {
+          const next = n.state === 1 ? 0 : 1;
+          playSound('click', soundEnabled);
+          return { ...n, state: next };
         }
         return n;
       })
     );
   };
 
-  // Dragging handlers
+  // Canvas Drag & Drop handlers
   const handleMouseDown = (nodeId: string, e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).tagName === 'BUTTON' || (e.target as HTMLElement).tagName === 'CIRCLE') return;
-    const node = nodes.find((n) => n.id === nodeId);
-    if (!node || !canvasRef.current) return;
+    if ((e.target as HTMLElement).tagName.toLowerCase() === 'button') return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    setDraggingNodeId(nodeId);
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
     setSelectedNodeId(nodeId);
+    setDraggingNodeId(nodeId);
     setDragOffset({
       x: e.clientX - rect.left - node.x,
       y: e.clientY - rect.top - node.y,
@@ -201,24 +204,27 @@ export const CircuitDesigner: React.FC = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const curX = e.clientX - rect.left;
-    const curY = e.clientY - rect.top;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-    setMousePos({ x: curX, y: curY });
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
 
     if (draggingNodeId) {
       setNodes((prev) =>
         prev.map((n) => {
           if (n.id === draggingNodeId) {
-            const nextX = Math.max(10, Math.min(rect.width - 120, curX - dragOffset.x));
-            const nextY = Math.max(10, Math.min(rect.height - 100, curY - dragOffset.y));
+            const nextX = Math.max(10, Math.min(rect.width - 120, currentX - dragOffset.x));
+            const nextY = Math.max(10, Math.min(rect.height - 80, currentY - dragOffset.y));
             return { ...n, x: nextX, y: nextY };
           }
           return n;
         })
       );
+    }
+
+    if (wireStart) {
+      setMousePos({ x: currentX, y: currentY });
     }
   };
 
@@ -231,25 +237,25 @@ export const CircuitDesigner: React.FC = () => {
     e.stopPropagation();
 
     if (isOutput) {
-      // Start wiring from output pin
+      // Start dragging a new wire from output pin
       setWireStart({ nodeId, pinIndex });
       playSound('click', soundEnabled);
     } else {
-      // Clicked on an input pin
+      // Target input pin clicked
       if (wireStart) {
         if (wireStart.nodeId === nodeId) {
-          // Can't connect node to itself
+          // Cannot connect node to itself
           setWireStart(null);
           return;
         }
 
-        // Remove existing wire on target pin if any
-        const filteredWires = connections.filter(
-          (w) => !(w.toNodeId === nodeId && w.toPinIndex === pinIndex)
+        // Remove any prior connection to this exact target pin
+        const filtered = connections.filter(
+          (c) => !(c.toNodeId === nodeId && c.toPinIndex === pinIndex)
         );
 
         const newWire: WireConnection = {
-          id: `w_${uuidv4().substring(0, 8)}`,
+          id: `wire_${uuidv4().substring(0, 8)}`,
           fromNodeId: wireStart.nodeId,
           fromPinIndex: wireStart.pinIndex,
           toNodeId: nodeId,
@@ -257,25 +263,40 @@ export const CircuitDesigner: React.FC = () => {
           signal: 0,
         };
 
-        setConnections([...filteredWires, newWire]);
+        setConnections([...filtered, newWire]);
         setWireStart(null);
         playSound('toggle', soundEnabled);
       }
     }
   };
 
-  const deleteNode = (id: string) => {
-    setNodes(nodes.filter((n) => n.id !== id));
-    setConnections(connections.filter((c) => c.fromNodeId !== id && c.toNodeId !== id));
-    if (selectedNodeId === id) setSelectedNodeId(null);
+  // Delete a specific node
+  const deleteNode = (nodeId: string) => {
+    setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+    setConnections((prev) =>
+      prev.filter((c) => c.fromNodeId !== nodeId && c.toNodeId !== nodeId)
+    );
+    if (selectedNodeId === nodeId) setSelectedNodeId(null);
     playSound('click', soundEnabled);
   };
 
+  // Delete a specific wire
   const deleteWire = (wireId: string) => {
-    setConnections(connections.filter((w) => w.id !== wireId));
+    setConnections((prev) => prev.filter((c) => c.id !== wireId));
     playSound('click', soundEnabled);
   };
 
+  // Load a preset circuit
+  const loadPreset = (index: number) => {
+    const preset = presetCircuits[index];
+    if (!preset) return;
+    setNodes(JSON.parse(JSON.stringify(preset.nodes)));
+    setConnections(JSON.parse(JSON.stringify(preset.connections)));
+    setShowPresetModal(false);
+    playSound('levelup', soundEnabled);
+  };
+
+  // Clear canvas
   const clearCanvas = () => {
     setNodes([]);
     setConnections([]);
@@ -283,61 +304,12 @@ export const CircuitDesigner: React.FC = () => {
     setWireStart(null);
   };
 
-  const loadPreset = (preset: (typeof presetCircuits)[0]) => {
-    setNodes(preset.nodes);
-    setConnections(preset.connections);
-    setShowPresetModal(false);
-    playSound('correct', soundEnabled);
-    recordCircuitBuilt();
-  };
-
-  // Generate Truth Table for all switch inputs in circuit
-  const generateTruthTable = () => {
-    const switchNodes = nodes.filter((n) => n.type === 'SWITCH');
-    const outputNodes = nodes.filter((n) => isOutputSink(n.type));
-
-    if (switchNodes.length === 0 || outputNodes.length === 0) {
-      return null;
-    }
-
-    const rowsCount = Math.pow(2, switchNodes.length);
-    const table: { inputs: Record<string, number>; outputs: Record<string, number> }[] = [];
-
-    for (let i = 0; i < rowsCount; i++) {
-      const rowInputs: Record<string, number> = {};
-      switchNodes.forEach((node, idx) => {
-        // bit at index
-        const bit = (i >> (switchNodes.length - 1 - idx)) & 1;
-        rowInputs[node.id] = bit;
-      });
-
-      // Simulate with this input combination
-      const testNodes = nodes.map((n) => {
-        if (n.type === 'SWITCH') return { ...n, state: rowInputs[n.id] };
-        return n;
-      });
-
-      const { updatedNodes } = simulateCircuit(testNodes, connections);
-      const rowOutputs: Record<string, number> = {};
-      outputNodes.forEach((outNode) => {
-        const found = updatedNodes.find((un) => un.id === outNode.id);
-        rowOutputs[outNode.id] = found?.outputValue ?? 0;
-      });
-
-      table.push({ inputs: rowInputs, outputs: rowOutputs });
-    }
-
-    return { switchNodes, outputNodes, table };
-  };
-
-  const truthTableData = generateTruthTable();
-
-  // Helper coordinate getters for SVG wires
+  // Helper Coordinates for Pins
   const getNodeOutputCoords = (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
     return {
-      x: node.x + 95,
+      x: node.x + 100,
       y: node.y + 40,
     };
   };
@@ -346,57 +318,109 @@ export const CircuitDesigner: React.FC = () => {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
     const isSingle = isSingleInputNode(node.type);
+    if (isSingle) {
+      return { x: node.x, y: node.y + 40 };
+    }
     return {
-      x: node.x + 5,
-      y: isSingle ? node.y + 40 : pinIndex === 0 ? node.y + 25 : node.y + 55,
+      x: node.x,
+      y: pinIndex === 0 ? node.y + 25 : node.y + 55,
     };
   };
 
-  const componentCategories: {
+  // Auto truth table generation for current circuit
+  const generateTruthTable = () => {
+    const switchNodes = nodes.filter((n) => n.type === 'SWITCH');
+    const outputNodes = nodes.filter((n) => isOutputSink(n.type));
+
+    if (switchNodes.length === 0 || outputNodes.length === 0) {
+      return null;
+    }
+
+    const totalRows = Math.pow(2, switchNodes.length);
+    const table: Array<{ inputs: Record<string, number>; outputs: Record<string, number> }> = [];
+
+    for (let r = 0; r < totalRows; r++) {
+      const inputCombo: Record<string, number> = {};
+      switchNodes.forEach((s, idx) => {
+        // compute bit value
+        const bit = (r >> (switchNodes.length - 1 - idx)) & 1;
+        inputCombo[s.id] = bit;
+      });
+
+      // Clone nodes and assign this state
+      const testNodes = nodes.map((n) => {
+        if (inputCombo[n.id] !== undefined) {
+          return { ...n, state: inputCombo[n.id] };
+        }
+        return { ...n };
+      });
+
+      const simResult = simulateCircuit(testNodes, connections);
+      const outputCombo: Record<string, number> = {};
+      outputNodes.forEach((o) => {
+        const found = simResult.updatedNodes.find((n) => n.id === o.id);
+        outputCombo[o.id] = found?.outputValue ?? 0;
+      });
+
+      table.push({ inputs: inputCombo, outputs: outputCombo });
+    }
+
+    return { switchNodes, outputNodes, table };
+  };
+
+  const truthTableData = showTruthTableModal ? generateTruthTable() : null;
+
+  // Component palette configuration
+  const componentCategories: Array<{
     category: string;
-    items: { type: ComponentType; label: string; icon?: string }[];
-  }[] = [
+    items: Array<{ type: ComponentType; label: string }>;
+  }> = [
     {
-      category: isEl ? 'Είσοδοι (Inputs)' : 'Inputs',
+      category: isEl ? 'Είσοδοι & Σήματα' : 'Inputs & Signals',
       items: [
-        { type: 'SWITCH', label: isEl ? 'Διακόπτης (0/1)' : 'Switch (0/1)' },
-        { type: 'CLOCK', label: isEl ? 'Παλμογράφος (Clock)' : 'Clock Pulse' },
-        { type: 'CONST_1', label: '+Vcc (1 HIGH)' },
-        { type: 'CONST_0', label: 'GND (0 LOW)' },
+        { type: 'SWITCH', label: isEl ? 'Διακόπτης' : 'Switch' },
+        { type: 'CLOCK', label: isEl ? 'Ρολόι (Clock)' : 'Clock Gen' },
+        { type: 'CONST_1', label: 'HIGH (1)' },
+        { type: 'CONST_0', label: 'LOW (0)' },
       ],
     },
     {
-      category: isEl ? 'Λογικές Πύλες' : 'Logic Gates',
+      category: isEl ? 'Βασικές Πύλες' : 'Standard Gates',
       items: [
         { type: 'AND', label: 'AND' },
         { type: 'OR', label: 'OR' },
         { type: 'NOT', label: 'NOT' },
         { type: 'XOR', label: 'XOR' },
-        { type: 'NAND', label: 'NAND' },
-        { type: 'NOR', label: 'NOR' },
-        { type: 'XNOR', label: 'XNOR' },
-        { type: 'BUFFER', label: 'BUFFER' },
       ],
     },
     {
-      category: isEl ? 'Έξοδοι (Outputs)' : 'Outputs',
+      category: isEl ? 'Σύνθετες Πύλες' : 'Universal & Other',
       items: [
-        { type: 'LED', label: isEl ? 'Λάμπα LED' : 'LED Light' },
-        { type: 'PROBE', label: isEl ? 'Μετρητής (Probe)' : 'Logic Probe' },
+        { type: 'NAND', label: 'NAND' },
+        { type: 'NOR', label: 'NOR' },
+        { type: 'XNOR', label: 'XNOR' },
+        { type: 'BUFFER', label: 'Buffer' },
+      ],
+    },
+    {
+      category: isEl ? 'Έξοδοι & Ενδείξεις' : 'Outputs & Displays',
+      items: [
+        { type: 'LED', label: 'LED Bulb' },
+        { type: 'PROBE', label: isEl ? 'Ακροδέκτης' : 'Probe' },
       ],
     },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black">
-            🛠️
+    <div className="space-y-6">
+      {/* Top Header Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-600/30">
+            ⚡
           </div>
           <div>
-            <h2 className="font-extrabold text-slate-900 dark:text-white text-lg leading-tight">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               {isEl ? 'Σχεδιαστής Κυκλωμάτων' : 'Circuit Designer'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -687,11 +711,11 @@ export const CircuitDesigner: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
-              {presetCircuits.map((preset) => (
+              {presetCircuits.map((preset, pIdx) => (
                 <div
-                  key={preset.id}
-                  onClick={() => loadPreset(preset)}
-                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/30 cursor-pointer transition-all hover:scale-[1.02] shadow-sm"
+                  key={pIdx}
+                  onClick={() => loadPreset(pIdx)}
+                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700 hover:border-indigo-500/60 cursor-pointer transition-all hover:scale-[1.02] shadow-sm"
                 >
                   <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                     {isEl ? preset.nameEl : preset.name}
@@ -747,7 +771,7 @@ export const CircuitDesigner: React.FC = () => {
                     {truthTableData.table.map((row, rIdx) => (
                       <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-750">
                         {truthTableData.switchNodes.map((s) => (
-                          <td key={s.id} className="py-2 px-3">
+                          <td key={s.id} className="py-2 px-3 text-slate-800 dark:text-slate-200 font-bold">
                             {row.inputs[s.id]}
                           </td>
                         ))}
@@ -758,8 +782,8 @@ export const CircuitDesigner: React.FC = () => {
                               key={o.id}
                               className={`py-2 px-3 font-bold ${
                                 val === 1
-                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                  : 'text-slate-500'
+                                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                                  : 'text-slate-500 dark:text-slate-400'
                               }`}
                             >
                               {val}
