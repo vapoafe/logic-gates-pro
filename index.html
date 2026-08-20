@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="el">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,10 +12,10 @@
     <script>
       (function() {
         try {
-          const stored = localStorage.getItem('logic_gates_academy_save');
+          var stored = localStorage.getItem('logic_gates_academy_save');
           if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed.state && parsed.state.theme === 'light') {
+            var parsed = JSON.parse(stored);
+            if (parsed && parsed.state && parsed.state.theme === 'light') {
               document.documentElement.classList.remove('dark');
               return;
             }
