@@ -1,4 +1,4 @@
-# Logic Gates Pro — Διαδραστική Πλατφόρμα Εκμάθησης Λογικών Πυλών & Σχεδιασμού Κυκλωμάτων
+# Logic Gates Pro - Διαδραστική Πλατφόρμα Εκμάθησης Λογικών Πυλών & Σχεδιασμού Κυκλωμάτων
 
 Μια σύγχρονη, πλήρως διαδραστική και ανοιχτού κώδικα (Open Source) εφαρμογή web για την εκμάθηση ψηφιακής λογικής, πυλών Boolean (AND, OR, NOT, NAND, NOR, XOR, XNOR), κανόνων De Morgan, πινάκων αληθείας και σχεδιασμού ψηφιακών κυκλωμάτων σε πραγματικό χρόνο με gamification (XP, επίπεδα, σερί, σήματα).
 
@@ -62,8 +62,8 @@
 ### Βήμα 1: Λήψη ή Κλωνοποίηση του Κώδικα
 Ανοίξτε το τερματικό σας (Terminal / Command Prompt) στον φάκελο του έργου:
 ```bash
-git clone <repository-url>
-cd <project-folder>
+git clone https://github.com/vapoafe/logic-gates-pro.git
+cd logic-gates-pro
 ```
 
 ### Βήμα 2: Εγκατάσταση Εξαρτήσεων (Dependencies)
